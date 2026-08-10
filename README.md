@@ -32,8 +32,6 @@ This project implements a full voice-to-actuation pipeline for a robotic manipul
 - A bridge layer connecting Alexa's cloud-hosted voice recognition to the local ROS 2 graph, tunneled to the internet with **ngrok**
 - A non-blocking Arduino firmware sketch that tracks per-joint targets independently, so multi-joint trajectories don't stall waiting on a single motor to finish moving
 
-I built this independently as a way to learn ROS 2 end-to-end — from robot description and simulation, through motion planning, to a working sim-to-real hardware bridge and network-connected voice control. The implementation, the C++ hardware interface, the Arduino firmware, the Alexa/Flask bridge, and all debugging were my own work.
-
 ---
 
 ## System Architecture
