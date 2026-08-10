@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+import rclpy
+import numpy as np
+from rclpy.node import Node
+from rclpy.action import ActionServer
+from arduinobot_msgs.action import ArduinobotTask
+from moveit.planning import MoveItPy
+from moveit.core.robot_state import RobotState
+
+
+class TaskServer(Node):
+    def __init__(self):
+        super().__init__("task_server")
+        self.get_logger().info("Starting the Server")
+        self.action_server = ActionServer(
+            self, ArduinobotTask, "task_server", self.goalCallback
+        )
+        self.arduinobot = MoveItPy(node_name="moveit_py")
+        self.arduinobot_arm = self.arduinobot.get_planning_component("arduinobot_arm")
+        self.arduinobot_gripper = self.arduinobot.get_planning_component("arduinobot_hand")
+
+    def goalCallback(self, goal_handle):
+        self.get_logger().info(
+            "Received goal request with task_number %d" % goal_handle.request.task_number
+        )
+
+        task_number = goal_handle.request.task_number
+
+        if task_number == 0:
+            arm_joint_goal = np.array([0.0, 0.0, 0.0])
+            gripper_joint_goal = np.array([-0.7, 0.7])
+        elif task_number == 1:
+            arm_joint_goal = np.array([-1.14, -0.6, -0.07])
+            gripper_joint_goal = np.array([0.0, 0.0])
+        elif task_number == 2:
+            arm_joint_goal = np.array([-1.57, 0.0, -0.9])
+            gripper_joint_goal = np.array([0.0, 0.0])
+        else:
+            self.get_logger().error("Invalid Task Number")
+            goal_handle.abort()
+            result = ArduinobotTask.Result()
+            result.success = False
+            return result
+
+        arm_state = RobotState(self.arduinobot.get_robot_model())
+        gripper_state = RobotState(self.arduinobot.get_robot_model())
+
+        arm_state.set_joint_group_positions("arduinobot_arm", arm_joint_goal)
+        gripper_state.set_joint_group_positions("arduinobot_hand", gripper_joint_goal)
+
+        self.arduinobot_arm.set_start_state_to_current_state()
+        self.arduinobot_gripper.set_start_state_to_current_state()
+
+        self.arduinobot_arm.set_goal_state(robot_state=arm_state)
+        self.arduinobot_gripper.set_goal_state(robot_state=gripper_state)
+
+        arm_plan_result = self.arduinobot_arm.plan()
+        gripper_plan_result = self.arduinobot_gripper.plan()
+
+        result = ArduinobotTask.Result()
+
+        if arm_plan_result and gripper_plan_result:
+            self.arduinobot.execute(arm_plan_result.trajectory, controllers=[])
+            self.arduinobot.execute(gripper_plan_result.trajectory, controllers=[])
+            goal_handle.succeed()
+            result.success = True
+        else:
+            self.get_logger().error("One or more planners failed")
+            goal_handle.abort()
+            result.success = False
+
+        return result
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    task_server = TaskServer()
+    rclpy.spin(task_server)
+
+
+if __name__ == "__main__":
+    main()

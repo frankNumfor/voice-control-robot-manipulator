@@ -1,0 +1,26 @@
+<launch>
+
+  <arg name="is_sim" default="True"/>
+  <arg name="model" default="$(find-pkg-share arduinobot_description)/urdf/arduinobot.urdf.xacro"/>
+
+  <node pkg="robot_state_publisher" exec="robot_state_publisher" name="robot_state_publisher"
+        unless="$(var is_sim)">
+    <param name="robot_description" value="$(command 'xacro $(var model) is_sim:=False')"/>
+  </node>
+
+  <node pkg="controller_manager" exec="ros2_control_node" name="controller_manager"
+        unless="$(var is_sim)">
+    <param name="robot_description" value="$(command 'xacro $(var model) is_sim:=False')"/>
+    <param from="$(find-pkg-share arduinobot_controller)/config/arduinobot_controllers.yaml"/>
+  </node>
+
+  <node pkg="controller_manager" exec="spawner" name="joint_state_broadcaster_spawner"
+        args="joint_state_broadcaster"/>
+
+  <node pkg="controller_manager" exec="spawner" name="arm_controller_spawner"
+        args="arm_controller"/>
+
+  <node pkg="controller_manager" exec="spawner" name="gripper_controller_spawner"
+        args="gripper_controller"/>
+
+</launch>

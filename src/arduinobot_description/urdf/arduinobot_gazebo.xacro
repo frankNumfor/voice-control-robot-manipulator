@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="arduinobot">
+
+  <gazebo>
+    <xacro:if value="$(arg is_sim)">
+      <plugin filename="ign_ros2_control-system" name="ign_ros2_control::IgnitionROS2ControlPlugin">
+        <parameters>$(find arduinobot_controller)/config/arduinobot_controllers.yaml</parameters>
+      </plugin>
+    </xacro:if>
+    <xacro:unless value="$(arg is_sim)">
+      <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+        <parameters>$(find arduinobot_controller)/config/arduinobot_controllers.yaml</parameters>
+      </plugin>
+    </xacro:unless>
+  </gazebo>
+
+</robot>
